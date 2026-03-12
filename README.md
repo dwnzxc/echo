@@ -3,7 +3,6 @@
 
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-![Physics](https://img.shields.io/badge/Physics-Relativity-7dd3fc?style=for-the-badge)
 ![Zero Dependencies](https://img.shields.io/badge/Dependencies-None-brightgreen?style=for-the-badge)
 
 ECHO is a zero-dependency HTML5/JS engine built to visualize spacetime curvature and orbital dynamics around a non-rotating (Schwarzschild) black hole. It runs entirely in the browser using the Canvas API, calculating test particle geodesics and metric topology in real-time.
