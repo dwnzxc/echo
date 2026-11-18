@@ -4,237 +4,146 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECHO - Dynamic Spacetime Visualizer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <meta name="color-scheme" content="dark">
     <style>
-        :root {
-            --bg-base: #0b111a;
-            --panel-bg: #141c26;
-            --sidebar-bg: #0f1620;
-            --text-main: #e0f2fe;
-            --text-muted: #7da5c4;
-            --accent: #7dd3fc;
-            --accent-glow: rgba(125, 211, 252, 0.4);
-            --border-color: #24354a;
-            --hover-bg: #1a2636;
-            --font-stack: 'JetBrains Mono', monospace;
-            --math-font: "Times New Roman", Times, serif;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-stack); user-select: none; }
-
-        body { background-color: #05080c; display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--text-main); }
-
-        .app-container {
-            width: 1200px; height: 700px; background-color: var(--bg-base); border-radius: 12px;
-            border: 1px solid var(--border-color); display: flex; overflow: hidden;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 15px var(--accent-glow); position: relative;
-        }
-
-        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 10;}
-        .logo { padding: 24px; font-size: 24px; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 10px; letter-spacing: 1.5px; text-shadow: 0 0 10px var(--accent-glow); }
-
-        .nav-section { padding: 12px 0; }
-        .nav-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 800; padding: 10px 24px; letter-spacing: 1px; }
-        .nav-item { padding: 12px 24px; font-size: 13px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s ease; position: relative; }
-        .nav-item:hover { background-color: var(--hover-bg); color: var(--text-main); }
-        .nav-item.active { background-color: #162a3f; color: var(--accent); font-weight: 600; }
-        .nav-item.active::before { content: ''; position: absolute; left: 0; top: 10%; height: 80%; width: 4px; background-color: var(--accent); border-radius: 0 4px 4px 0; box-shadow: 0 0 8px var(--accent); }
-
-        .main-content { flex: 1; padding: 24px; display: flex; gap: 24px; }
-        .visualizer-panel { flex: 1.6; background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
-        .panel-header { padding: 16px 20px; font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; background: linear-gradient(180deg, #182330 0%, var(--panel-bg) 100%); }
-        .panel-header svg { color: var(--accent); }
-
-        .canvas-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; background-color: #0b111a; position: relative; padding: 20px; }
-        .plot-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-        canvas { background: #0b111a; border: 1px solid var(--text-muted); box-shadow: 0 0 20px rgba(0,0,0,0.5); border-radius: 6px;}
-
-        .info-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow-y: auto;}
-        .card { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; flex-shrink: 0;}
-        
-        .equation-box { padding: 20px; border-bottom: 1px solid var(--border-color); text-align: center; }
-        .equation-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text-main);}
-        .equation-box p { font-size: 11px; color: var(--text-muted); margin-bottom: 15px; }
-        .math-text { font-family: var(--math-font); font-size: 16px; color: var(--accent); text-align: center; letter-spacing: 1px; line-height: 1.5; }
-
-        .controls-box { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .control-group { display: flex; flex-direction: column; gap: 8px; transition: opacity 0.3s ease;}
-        .control-group.disabled { opacity: 0.3; pointer-events: none; }
-        .control-group label { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;}
-        
-        input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; margin-top: -5px; box-shadow: 0 0 8px var(--accent-glow); }
-        input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: var(--border-color); border-radius: 2px; }
-
-        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #05080c; border: 1px solid var(--border-color); transition: .2s; border-radius: 18px; }
-        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: var(--text-muted); transition: .2s; border-radius: 50%; }
-        input:checked + .slider { background-color: rgba(125, 211, 252, 0.2); border-color: var(--accent); }
-        input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
-
-        .btn { background-color: rgba(125, 211, 252, 0.1); color: var(--accent); border: 1px solid var(--accent); padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; font-size: 12px; outline: none; }
-        .btn:hover { background-color: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent-glow); }
-
-        .profile-area { margin-top: auto; padding: 20px 24px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 14px; background-color: #0c121b; }
-        .avatar { width: 40px; height: 40px; background-color: var(--accent); border-radius: 8px; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #000; font-size: 18px; box-shadow: 0 0 10px var(--accent-glow); }
-        .profile-info .profile-name { font-size: 14px; font-weight: 600; color: var(--text-main); }
-        .profile-info .profile-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-
-        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; backdrop-filter: blur(3px); opacity: 0; transition: opacity 0.2s ease; }
-        .modal-overlay.show { display: flex; opacity: 1; }
-        .modal { background: var(--panel-bg); border: 1px solid var(--accent); border-radius: 8px; padding: 24px; width: 320px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform: translateY(20px); transition: transform 0.2s ease; }
-        .modal-overlay.show .modal { transform: translateY(0); }
-        .modal h4 { color: var(--text-main); font-size: 14px; font-weight: 600; text-align: center; margin-bottom: 5px; }
-        .modal-input-wrapper { display: flex; flex-direction: column; gap: 8px; }
-        .modal-input-wrapper label { font-size: 11px; color: var(--text-muted); text-align: center; }
-        .modal input[type="number"] { background: #0b111a; border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: 6px; text-align: center; font-size: 16px; outline: none; transition: all 0.2s; }
-        .modal input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
-        .modal-btns { display: flex; gap: 12px; margin-top: 5px; }
-        .modal-btns .btn { flex: 1; padding: 10px; }
-        .btn-cancel { background: transparent; border-color: var(--border-color); color: var(--text-muted); }
-        .btn-cancel:hover { background: var(--hover-bg); color: var(--text-main); box-shadow: none; border-color: var(--text-muted); }
-
-        #toast { visibility: hidden; min-width: 250px; background-color: var(--hover-bg); color: var(--text-main); text-align: center; border-radius: 6px; padding: 16px; position: absolute; z-index: 100; left: 50%; bottom: 30px; transform: translateX(-50%); border: 1px solid var(--accent); font-size: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        :root { color-scheme:dark; --bg:#161718; --panel:#1c1d1f; --raised:#232527; --line:#303235; --text:#e0e1e3; --muted:#a0a4aa; --accent:#a8c6bd; --mono:ui-monospace,Consolas,monospace; }
+        * { box-sizing:border-box; }
+        body { margin:0; background:#111213; color:var(--text); font:14px/1.5 'Segoe UI',system-ui,sans-serif; }
+        button,input { font:inherit; }
+        button { cursor:pointer; }
+        button:focus-visible,input:focus-visible { outline:2px solid var(--accent); outline-offset:5px; }
+        button { color:inherit; }
+        .app-container { max-width:1500px; margin:32px auto; background:var(--bg); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:0 20px 70px #0003; }
+        .topbar { height:76px; display:flex; justify-content:space-between; align-items:center; padding:0 28px; border-bottom:1px solid var(--line); background:#1b1c1d; gap:16px; }
+        .brand { display:flex; align-items:center; gap:13px; }
+        .brand-mark { width:33px; height:33px; color:var(--accent); }
+        .brand-name { font-size:19px; font-weight:650; letter-spacing:3px; }
+        .top-actions { display:flex; align-items:center; gap:10px; }
+        .button { border:1px solid #3b3e41; background:#26282a; padding:8px 13px; border-radius:6px; font-size:12px; transition:background .15s; display:inline-flex; gap:8px; align-items:center; justify-content:center; }
+        .button:hover { background:#303335; }
+        .button.primary { background:#c1d4cc; color:#1d2924; border-color:#c1d4cc; font-weight:600; }
+        .button.primary:hover { background:#d0e0d8; }
+        .button svg { width:14px; height:14px; }
+        .workspace { display:grid; grid-template-columns:205px minmax(0,1fr); min-height:0; }
+        .sidebar { padding:30px 16px 20px; background:#191a1b; border-right:1px solid var(--line); display:flex; flex-direction:column; }
+        .nav-item { appearance:none; width:100%; text-align:left; border:1px solid transparent; background:transparent; display:flex; gap:11px; align-items:center; border-radius:6px; padding:12px; margin-bottom:5px; font-size:12px; color:var(--muted); }
+        .nav-item svg { width:17px; height:17px; flex-shrink:0; }
+        .nav-item:hover { background:#232527; color:var(--text); }
+        .nav-item.active { background:#282d2c; border-color:#37423d; color:#c6d9d1; }
+        .main-content { padding:28px; min-width:0; }
+        .content-grid { display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:20px; align-items:start; }
+        .visualizer-panel { min-width:0; background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+        .panel-header { min-height:50px; display:flex; align-items:center; justify-content:space-between; padding:12px 18px; gap:10px; border-bottom:1px solid var(--line); font-size:12px; }
+        .panel-header span:last-child { color:var(--muted); font:10px var(--mono); }
+        .canvas-wrapper { padding:12px; background:#161819; }
+        .plot-container { position:relative; width:100%; height:clamp(320px,calc(100vh - 310px),680px); }
+        canvas { display:block; width:100%; height:100%; object-fit:contain; aspect-ratio:20/17; }
+        .plot-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:18px; padding:0 10px 15px; color:#a8adb1; font-size:10px; background:#161819; }
+        .legend-key { display:inline-block; width:12px; height:2px; background:#97b7c5; vertical-align:middle; margin-right:6px; }
+        .legend-key.horizon { background:#be8e84; }
+        .legend-key.photon { background:#ae9c77; }
+        .playback { border-top:1px solid var(--line); padding:14px 16px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+        .toggle { display:flex; align-items:center; gap:8px; font-size:11px; color:#c8cbce; cursor:pointer; }
+        .toggle input { appearance:none; width:28px; height:16px; background:#3a3d40; border-radius:12px; position:relative; margin:0; cursor:pointer; flex-shrink:0; }
+        .toggle input:before { content:''; position:absolute; width:10px; height:10px; top:3px; left:3px; border-radius:50%; background:#a4a8ad; transition:transform .15s; }
+        .toggle input:checked { background:#567367; }
+        .toggle input:checked:before { transform:translateX(12px); background:#d5e6dd; }
+        .restart { margin-left:auto; border:0; background:transparent; color:#b1b8bc; font-size:11px; padding:5px; }
+        .restart:hover { color:var(--text); }
+        #simulationStatus { border-top:1px solid var(--line); color:var(--muted); padding:10px 16px; min-height:36px; font:10px/1.6 var(--mono); }
+        .info-panel { display:flex; flex-direction:column; gap:16px; min-width:0; }
+        .card { border:1px solid var(--line); background:var(--panel); border-radius:8px; overflow:hidden; }
+        .card-title { padding:14px 16px; border-bottom:1px solid var(--line); font-size:12px; font-weight:550; margin:0; }
+        .card-body { padding:16px; }
+        .control-group { margin-bottom:20px; }
+        .control-group:last-child { margin-bottom:0; }
+        .control-group label { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:#bcc1c5; gap:10px; margin-bottom:12px; }
+        .readout { font:10px var(--mono); color:#d1d5d7; background:#292c2e; border:1px solid #35383a; border-radius:4px; padding:2px 6px; }
+        input[type=range] { appearance:none; display:block; width:100%; height:4px; background:#383d3f; border-radius:3px; accent-color:var(--accent); cursor:pointer; margin:0; }
+        input[type=range]::-webkit-slider-thumb { appearance:none; width:11px; height:11px; background:#b4cec3; border:2px solid #d3dfd9; border-radius:50%; }
+        input[type=range]::-moz-range-thumb { width:8px; height:8px; background:#b4cec3; border:2px solid #d3dfd9; border-radius:50%; }
+        .disabled { opacity:.4; }
+        input:disabled { cursor:default; }
+        .separator { height:1px; background:var(--line); margin:22px 0; }
+        .equation-box h3 { margin:0 0 8px; font-size:12px; font-weight:550; }
+        .equation-box p { color:var(--muted); margin:0 0 16px; font-size:10px; line-height:1.7; }
+        .fraction { display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; font-size:.85em; margin:0 3px; line-height:1.2; } .fraction > span:first-child { border-bottom:1px solid currentColor; padding:0 3px 2px; } .fraction > span:last-child { padding-top:2px; }
+        .math-text { font:17px/1.8 Georgia,serif; color:#c3d3cd; text-align:center; overflow-wrap:anywhere; }
+        .telemetry { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:0; }
+        .telemetry dt { color:var(--muted); font-size:10px; margin-bottom:5px; }
+        .telemetry dd { margin:0; font:12px var(--mono); color:#d7dcde; }
+        .modal-overlay { display:none; position:fixed; inset:0; background:#0008; backdrop-filter:blur(5px); z-index:20; align-items:center; justify-content:center; padding:20px; }
+        .modal-overlay.show { display:flex; }
+        .modal { background:#222426; border:1px solid #454a4e; border-radius:10px; width:360px; padding:24px; box-shadow:0 20px 70px #0006; }
+        .modal h2 { font-size:18px; font-weight:550; margin:0 0 8px; }
+        .modal p { color:var(--muted); font-size:12px; margin:0 0 24px; }
+        .modal label { display:block; color:#c1c7cb; font-size:12px; margin-bottom:9px; }
+        .modal input { width:100%; background:#17191a; border:1px solid #454a4e; border-radius:5px; color:var(--text); padding:11px; }
+        .modal-btns { display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+        #toast { position:fixed; bottom:26px; left:50%; transform:translateX(-50%); background:#303735; border:1px solid #52675c; color:#dde7e1; padding:12px 20px; border-radius:7px; font-size:12px; visibility:hidden; z-index:30; }
+        #toast.show { visibility:visible; }
+        @media(min-width:1600px) { .app-container { margin-top:60px; } }
+        @media(max-width:1200px) { .app-container { margin:16px; } .main-content { padding:22px; } .workspace { grid-template-columns:175px minmax(0,1fr); } .content-grid { grid-template-columns:minmax(0,1fr) 250px; gap:16px; } }
+        @media(max-width:980px) { .workspace { display:block; min-height:0; } .sidebar { padding:12px 22px; border-right:0; border-bottom:1px solid var(--line); } .sidebar nav { display:flex; gap:8px; } .nav-item { margin:0; width:auto; flex:1; justify-content:center; } }
+        @media(max-width:700px) { .plot-container { height:auto; } canvas { height:auto; } .app-container { margin:0; border:0; border-radius:0; } .topbar { padding:0 18px; height:68px; } .top-actions .button { padding:8px 10px; } .workspace .sidebar { padding:10px 12px; } .nav-item { font-size:10px; padding:10px 5px; gap:6px; } .nav-item svg { width:14px; } .main-content { padding:22px 14px; } .content-grid { grid-template-columns:minmax(0,1fr); } .info-panel { display:grid; grid-template-columns:1fr 1fr; gap:12px; } .info-panel .settings-card { grid-column:1/-1; } .playback { gap:12px; } .brand-name { font-size:17px; } .brand-mark { width:28px; } }
+        @media(prefers-reduced-motion:reduce) { * { transition:none!important; } }
     </style>
 </head>
 <body>
-
 <div class="app-container">
-    <aside class="sidebar">
-        <div class="logo">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 4v2m-1-1h2" stroke-width="2"></path>
-                <path d="M21 10v2m-1-1h2" stroke-width="2"></path>
-                <path d="M9 12c2-3 5-4 8-3 1 0 3 2 4 4-2-1-4-1-6 0 2 1 3 3 3 5-2-1-4-2-6-1 1 2 2 3 2 4-3-1-5-2-6-2"></path>
-                <path d="M9 12S6 8 4 9c0 0-2 4 1 6l1 5 3-1-1-4s3-1 4-3"></path>
-            </svg>
-            ECHO
+    <header class="topbar">
+        <div class="brand">
+            <svg class="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><circle cx="18" cy="18" r="6" stroke="currentColor" stroke-width="1.5"/><ellipse cx="18" cy="18" rx="16" ry="7" transform="rotate(-35 18 18)" stroke="currentColor"/><circle cx="29" cy="9" r="2" fill="currentColor"/></svg>
+            <span class="brand-name">ECHO</span>
         </div>
-
-        <div class="nav-section">
-            <div class="nav-title">Relativity Modes</div>
-            <div class="nav-item active" onclick="setState('geodesics', this)">⊚ Equatorial Geodesics</div>
-            <div class="nav-item" onclick="setState('potential', this)">⊚ Effective Potential</div>
-            <div class="nav-item" onclick="setState('lapse', this)">⊚ Time Dilation Well</div>
+        <div class="top-actions">
+            <button class="button" onclick="openConfigModal()" id="massButton">Mass <span id="massReadout">1.0</span><span aria-hidden="true">↗</span></button>
+            <button class="button primary" onclick="exportData()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10 2v10m-4-4 4 4 4-4M3 13v4h14v-4"/></svg>Export data</button>
         </div>
-        
-        <div class="nav-section">
-            <div class="nav-title">Calculation</div>
-            <div class="nav-item" onclick="exportData()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                Data Export
+    </header>
+    <div class="workspace">
+        <aside class="sidebar">
+            <nav aria-label="Simulation modes">
+                <button class="nav-item active" aria-pressed="true" onclick="setState('geodesics', this)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="10" cy="10" r="3"/><ellipse cx="10" cy="10" rx="9" ry="5" transform="rotate(-35 10 10)"/></svg>Geodesics</button>
+                <button class="nav-item" aria-pressed="false" onclick="setState('potential', this)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true"><path d="M1 5c5 0 4 11 9 11s4-11 9-11M2 2v16h16"/></svg>Effective potential</button>
+                <button class="nav-item" aria-pressed="false" onclick="setState('lapse', this)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 5v5l3 2"/></svg>Time dilation</button>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <div class="content-grid">
+                <section class="visualizer-panel" aria-label="Simulation viewport">
+                    <div class="panel-header"><span id="panelTitle">Equatorial geodesics</span><span id="stateLabel">M = 1 · rₛ = 2</span></div>
+                    <div class="canvas-wrapper"><div class="plot-container"><canvas id="mathCanvas" width="1000" height="850" aria-label="Test particle trajectory around a Schwarzschild black hole"></canvas></div></div>
+                    <div class="plot-legend"><span><i class="legend-key"></i>Trajectory</span><span><i class="legend-key horizon"></i>Event horizon</span><span id="photonLegend"><i class="legend-key photon"></i>Photon sphere</span></div>
+                    <div class="playback"><label class="toggle"><input type="checkbox" id="motionToggle">Animate motion</label><label class="toggle"><input type="checkbox" id="pathToggle" checked>Show path</label><button class="restart" id="restartButton" title="Return to the initial state">↺ Restart</button></div>
+                    <div id="simulationStatus" role="status"></div>
+                </section>
+                <aside class="info-panel" aria-label="Simulation settings">
+                    <section class="card settings-card"><h2 class="card-title">Parameters</h2><div class="card-body">
+                        <div class="control-group"><label for="momSlider">Angular momentum · L<span id="momVal" class="readout">3.550</span></label><input type="range" id="momSlider" min="3.200" max="4.200" step="0.005" value="3.550"></div>
+                        <div class="separator"></div>
+                        <div class="control-group"><label for="scaleSlider">View radius<span id="scaleVal" class="readout">15</span></label><input type="range" id="scaleSlider" min="5" max="40" value="15"></div>
+                        <div class="control-group" id="angleControl"><label for="angleSlider">Surface tilt<span id="angleVal" class="readout">60°</span></label><input type="range" id="angleSlider" min="20" max="85" value="60"></div>
+                        <div class="separator"></div>
+                        <div class="control-group"><label for="pMassSlider">Particle size</label><input type="range" id="pMassSlider" min="2" max="10" value="4"></div>
+                        <div class="control-group" id="motionControls"><label for="speedSlider">Playback speed<span id="speedVal" class="readout">1.5×</span></label><input type="range" id="speedSlider" min="1" max="100" value="15"></div>
+                    </div></section>
+                    <section class="card"><h2 class="card-title">Orbit constants</h2><div class="card-body"><dl class="telemetry"><div><dt>Specific energy</dt><dd id="energyReadout">—</dd></div><div><dt>Horizon · rₛ</dt><dd id="horizonReadout">2.000</dd></div></dl></div></section>
+                    <section class="card"><div class="card-body equation-box" id="eqBox"></div></section>
+                </aside>
             </div>
-            <div class="nav-item" onclick="openConfigModal()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                Mass Config
-            </div>
-        </div>
-
-        <div class="profile-area">
-            <div class="avatar">D</div>
-            <div class="profile-info">
-                <div class="profile-name">Deniz</div>
-                <div class="profile-sub" id="dateDisplay">Load Date...</div>
-            </div>
-        </div>
-    </aside>
-
-    <main class="main-content">
-        <div class="visualizer-panel">
-            <div class="panel-header">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                Dynamic Geodesic Engine
-                <span id="stateLabel" style="margin-left:auto; color:var(--text-muted);"> Mode (Geodesics) | M=1</span>
-            </div>
-            <div class="canvas-wrapper">
-                <div class="plot-container">
-                    <canvas id="mathCanvas" width="550" height="500"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="info-panel">
-            <div class="card">
-                <div class="equation-box" id="eqBox">
-                    </div>
-            </div>
-
-            <div class="card controls-box">
-                <div class="control-group">
-                    <label><span>Camera Zoom (r_max)</span> <span id="scaleVal">15</span></label>
-                    <input type="range" id="scaleSlider" min="5" max="40" value="15">
-                </div>
-                <div class="control-group" id="angleControl">
-                    <label><span>Camera Angle (Tilt)</span> <span id="angleVal">60&deg;</span></label>
-                    <input type="range" id="angleSlider" min="20" max="85" value="60">
-                </div>
-                
-                <div style="height: 1px; background-color: var(--border-color); margin: 5px 0;"></div>
-
-                <div class="control-group">
-                    <label>
-                        <span>Show Geodesic Path</span> 
-                        <label class="switch">
-                            <input type="checkbox" id="pathToggle" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </label>
-                </div>
-                <div class="control-group">
-                    <label>
-                        <span>Animate Particle Motion</span> 
-                        <label class="switch">
-                            <input type="checkbox" id="motionToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </label>
-                </div>
-                <div class="control-group" id="animControlsContainer">
-                    <label><span>Specific Angular Momentum (L)</span> <span id="momVal">3.550</span></label>
-                    <input type="range" id="momSlider" min="3.200" max="4.200" step="0.005" value="3.550">
-                    
-                    <label style="margin-top: 5px;"><span>Visual Particle Size</span></label>
-                    <input type="range" id="pMassSlider" min="2" max="10" value="4">
-
-                    <label style="margin-top: 5px;"><span>Animation Speed</span> <span id="speedVal">1.5x</span></label>
-                    <input type="range" id="speedSlider" min="1" max="100" value="15">
-                </div>
-            </div>
-        </div>
-    </main>
-    
-    <div class="modal-overlay" id="configModal">
-        <div class="modal">
-            <h4>Singularity Configuration</h4>
-            <div class="modal-input-wrapper">
-                <label>Black Hole Mass (M)</label>
-                <input type="number" id="mInput" min="0.1" step="0.5" value="1">
-            </div>
-            <div class="modal-btns">
-                <button class="btn btn-cancel" onclick="closeConfigModal()">Cancel</button>
-                <button class="btn" onclick="applyConfig()">Apply Settings</button>
-            </div>
-        </div>
+        </main>
     </div>
-
-    <div id="toast">Message</div>
+    <div class="modal-overlay" id="configModal"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="massTitle"><h2 id="massTitle">Black hole mass</h2><p>Changes the horizon and the orbit. Angular momentum stays fixed.</p><label for="mInput">Mass · M (0.1–1000)</label><input type="number" id="mInput" min="0.1" max="1000" step="0.1" value="1"><div class="modal-btns"><button class="button" onclick="closeConfigModal()">Cancel</button><button class="button primary" onclick="applyConfig()">Apply mass</button></div></section></div>
+    <div id="toast" role="status"></div>
 </div>
 
 <script>
-    const dateOpts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-    document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('en-US', dateOpts);
-
     const canvas = document.getElementById('mathCanvas');
     const ctx = canvas.getContext('2d');
-    
+
     const bgCanvas = document.createElement('canvas');
-    bgCanvas.width = 550; bgCanvas.height = 500;
+    bgCanvas.width = canvas.width; bgCanvas.height = canvas.height;
     const bgCtx = bgCanvas.getContext('2d');
 
     const scaleSlider = document.getElementById('scaleSlider');
@@ -244,10 +153,11 @@
     const configModal = document.getElementById('configModal');
     const mInput = document.getElementById('mInput');
     const eqBox = document.getElementById('eqBox');
-    
+
     const pathToggle = document.getElementById('pathToggle');
     const motionToggle = document.getElementById('motionToggle');
-    const animControlsContainer = document.getElementById('animControlsContainer');
+    const motionControls = document.getElementById('motionControls');
+    const simulationStatus = document.getElementById('simulationStatus');
     const momSlider = document.getElementById('momSlider');
     const pMassSlider = document.getElementById('pMassSlider');
     const speedSlider = document.getElementById('speedSlider');
@@ -257,203 +167,170 @@
     let animId = null;
     let particlePath = [];
     let particleProgress = 0;
-    let particleDead = false;
+    let trajectory = null;
+    let lastFrameTime = null;
+    let trajectoryKey = '';
+
+    // G=c=1. Integrate in T=t/M with h=log(r/M-2), w=dr/dtau.
+    // The log coordinate resolves the asymptotic horizon approach without crossing it.
+    const physics = {
+        potential: (r, M, L) => (1 - 2*M/r) * (1 + L*L/(r*r)),
+        lapse: (r, M) => Math.sqrt(Math.max(0, 1 - 2*M/r)),
+        initialRadius(M, L) {
+            const ell = L/M;
+            return ell >= Math.sqrt(12)
+                ? 1.1*M*(ell*ell + ell*Math.sqrt(Math.max(0, ell*ell-12)))/2
+                : 15*M;
+        },
+        generate(M, L, {step = 0.125, maxSteps = 100000, rStart = this.initialRadius(M, L)} = {}) {
+            if (!Number.isFinite(M) || M <= 0 || !Number.isFinite(L) || L < 0 ||
+                !Number.isFinite(rStart) || rStart <= 2*M || !Number.isFinite(step) || step <= 0 ||
+                !Number.isInteger(maxSteps) || maxSteps < 1) throw new RangeError('Invalid orbit parameters');
+            const ell = L/M;
+            const energy = Math.sqrt(this.potential(rStart, M, L));
+            const derivative = ([h, w]) => {
+                const gap = Math.exp(h);
+                const rho = 2 + gap;
+                const f = gap/rho;
+                return [w/(energy*rho),
+                    f/energy*(-1/(rho*rho) + ell*ell/(rho*rho*rho) - 3*ell*ell/(rho**4)),
+                    f*ell/(energy*rho*rho), f/energy];
+            };
+            const add = (y, k, amount) => y.map((v, i) => v + amount*k[i]);
+            let y = [Math.log(rStart/M - 2), 0, 0, 0];
+            const points = [];
+            let termination = 'time-limit';
+            for (let i = 0; i <= maxSteps; i++) {
+                const gap = Math.exp(y[0]);
+                const rho = 2 + gap;
+                const f = gap/rho;
+                points.push({r: M*rho, phi: y[2], t: i*step*M, tau: y[3]*M,
+                    radialVelocity: y[1], lapse: Math.sqrt(f)});
+                if (gap <= 1e-10) { termination = 'horizon-limit'; break; }
+                if (i === maxSteps) break;
+                const k1 = derivative(y);
+                const k2 = derivative(add(y, k1, step/2));
+                const k3 = derivative(add(y, k2, step/2));
+                const k4 = derivative(add(y, k3, step));
+                y = y.map((v, j) => v + step*(k1[j]+2*k2[j]+2*k3[j]+k4[j])/6);
+            }
+            return {points, energy, M, L, step, termination};
+        }
+    };
 
     const relFunctions = {
         'potential': (r, rs) => {
             if (r <= rs) return null;
             const L = parseFloat(momSlider.value);
-            return -((1 - rs/r) * (1 + (L*L)/(r*r))) * 3; 
+            return 3*massM*(physics.potential(r, massM, L) - 1);
         },
-        'lapse': (r, rs) => r <= rs ? null : (Math.sqrt(1 - rs/r) - 1) * 10
+        'lapse': (r, rs) => r <= rs ? null : (physics.lapse(r, massM) - 1) * 10*massM
     };
 
     const equations = {
-        'geodesics': { title: "Equatorial Geodesics", desc: "Test particle trajectory warped by spacetime curvature.", eq: "<sup>d&sup2;u</sup>&frasl;<sub>d&phi;&sup2;</sub> + u = <sup>M</sup>&frasl;<sub>L&sup2;</sub> + 3Mu&sup2;" },
-        'potential': { title: "Effective Potential", desc: "Radial dynamics potential well for massive particles.", eq: "V<sub>eff</sub>(r) = (1 - <sup>r<sub>s</sub></sup>&frasl;<sub>r</sub>)(1 + <sup>L<sup>2</sup></sup>&frasl;<sub>r<sup>2</sup></sub>)" },
-        'lapse': { title: "Lapse Function", desc: "Gravitational time dilation gradient (funnel mapping).", eq: "&alpha;(r) = &radic;<span style='text-decoration:overline;'>1 - <sup>r<sub>s</sub></sup>&frasl;<sub>r</sub></span>" }
+        'geodesics': { title: "Equatorial Geodesics", desc: "Test particle trajectory warped by spacetime curvature.", eq: "<span class='fraction'><span>d²u</span><span>dφ²</span></span> + u = <span class='fraction'><span>M</span><span>L²</span></span> + 3Mu²" },
+        'potential': { title: "Effective Potential", desc: "Scalar plot: height = 3M(Veff − 1). Not a spatial embedding.", eq: "V<sub>eff</sub>(r) = (1 - <sup>r<sub>s</sub></sup>&frasl;<sub>r</sub>)(1 + <sup>L<sup>2</sup></sup>&frasl;<sub>r<sup>2</sup></sub>)" },
+        'lapse': { title: "Lapse Function", desc: "Static-clock rate; plot height = 10M(α − 1).", eq: "&alpha;(r) = &radic;<span style='text-decoration:overline;'>1 - <sup>r<sub>s</sub></sup>&frasl;<sub>r</sub></span>" }
     };
 
     function initParticle() {
-        particlePath = [];
+        const L = parseFloat(momSlider.value);
+        const key = `${massM}:${L}`;
+        if (key === trajectoryKey) return;
+        trajectory = physics.generate(massM, L);
+        particlePath = trajectory.points;
+        document.getElementById('energyReadout').textContent = trajectory.energy.toFixed(6);
+        document.getElementById('horizonReadout').textContent = (2*massM).toFixed(3);
+        document.getElementById('massReadout').textContent = massM.toFixed(1);
+        trajectoryKey = key;
         particleProgress = 0;
-        particleDead = false;
+        lastFrameTime = null;
+    }
 
-        const L = parseFloat(momSlider.value); 
-        const M = massM;
-        const rs = 2 * M;
-        
-        let r_start;
-        
-        if (L >= Math.sqrt(12) * M) {
-            let r_stable = (L*L + L * Math.sqrt(L*L - 12*M*M)) / (2*M);
-            r_start = r_stable * 1.1; 
-        } else {
-            r_start = 15 * M; 
+    function projectPoint(x, y, z = 0) {
+        const scale = canvas.width * (currentState === 'geodesics' ? 0.45 : 0.4) / parseFloat(scaleSlider.value);
+        if (currentState === 'geodesics') {
+            return {x: canvas.width/2 + x*scale, y: canvas.height/2 - y*scale};
         }
-        
-        let u = 1 / r_start;
-        let v_u = 0; 
-        let phi = 0;
-        let dPhi = 0.005; 
+        const tilt = parseFloat(angleSlider.value)*Math.PI/180;
+        return {x: canvas.width/2 + x*scale,
+            y: canvas.height/2.5 + (y*Math.cos(tilt) + z*Math.sin(tilt))*scale};
+    }
 
-        for(let step = 0; step < 50000; step++) {
-            v_u += (M/(L*L) + 3*M*u*u - u) * dPhi;
-            u += v_u * dPhi;
-            phi += dPhi;
+    function sampleParticle() {
+        const index = Math.min(Math.floor(particleProgress), particlePath.length-1);
+        const a = particlePath[index];
+        const b = particlePath[Math.min(index+1, particlePath.length-1)];
+        const fraction = particleProgress-index;
+        const mix = key => a[key] + fraction*(b[key]-a[key]);
+        return {r: mix('r'), phi: mix('phi'), lapse: mix('lapse'), t: mix('t')};
+    }
 
-            if (u <= 0) break; 
-            
-            let currentR = 1/u;
-            if (currentR > 100 * M) break; 
-            
-            particlePath.push({r: currentR, phi: phi});
-
-            if (currentR <= rs * 1.001) {
-                for(let f = 0; f < 500; f++) particlePath.push({r: currentR, phi: phi});
-                break; 
-            }
-        }
+    function drawScene() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bgCanvas, 0, 0);
+        const point = sampleParticle();
+        simulationStatus.textContent = `t/M = ${(point.t/massM).toFixed(1)}`;
+        const z = currentState === 'geodesics' ? 0 : relFunctions[currentState](point.r, 2*massM);
+        if (z === null) return;
+        const position = projectPoint(point.r*Math.cos(point.phi), point.r*Math.sin(point.phi), z);
+        const size = parseFloat(pMassSlider.value);
+        // A schematic static gravitational-frequency cue, not the moving emitter's Doppler spectrum.
+        const shift = 1-point.lapse;
+        const cr = Math.round(125+130*shift);
+        const cg = Math.round(211*(1-shift));
+        const cb = Math.round(252*(1-shift));
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, size*2, 0, 2*Math.PI);
+        ctx.fillStyle = `rgba(${cr},${cg},${cb},${0.4*point.lapse})`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, size, 0, 2*Math.PI);
+        ctx.fillStyle = `rgba(${cr},${cg},${cb},${point.lapse})`;
+        ctx.fill();
     }
 
     function triggerRender() {
+        initParticle();
         if (currentState === 'geodesics') renderGeodesics(bgCtx);
         else renderWireframe(bgCtx);
-
-        if (animId) cancelAnimationFrame(animId);
-        
-        if (pathToggle.checked || motionToggle.checked) {
-            initParticle();
-            animControlsContainer.classList.remove('disabled');
-            
-            if (motionToggle.checked) {
-                animate();
-            } else {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(bgCanvas, 0, 0);
-            }
-        } else {
-            animControlsContainer.classList.add('disabled');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(bgCanvas, 0, 0);
+        const disabled = !motionToggle.checked;
+        motionControls.classList.toggle('disabled', disabled);
+        speedSlider.disabled = disabled;
+        angleSlider.disabled = currentState === 'geodesics';
+        if (animId !== null) cancelAnimationFrame(animId);
+        animId = null;
+        drawScene();
+        if (motionToggle.checked) {
+            animId = requestAnimationFrame(animate);
         }
     }
 
-    function animate() {
-        if (!motionToggle.checked) return;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(bgCanvas, 0, 0);
-
-        const width = canvas.width;
-        const height = canvas.height;
-        const rs = 2 * massM;
-        const rMax = parseFloat(scaleSlider.value);
-        const tiltRad = parseFloat(angleSlider.value) * (Math.PI / 180);
-        
-        const scale = (width * 0.4) / rMax; 
-        const cx = width / 2;
-        const cy = currentState === 'geodesics' ? height / 2 : height / 2.5;
-        const pSize = parseFloat(pMassSlider.value);
-        const baseSpeed = parseFloat(speedSlider.value); 
-
-        function project(r, phi) {
-            const x = r * Math.cos(phi);
-            const y = r * Math.sin(phi);
-            if (currentState === 'geodesics') {
-                return { x: cx + x * scale, y: cy - y * scale }; 
-            } else {
-                let z;
-                if (r <= rs) {
-                    z = -20 * (rs / Math.max(r, 0.01)); 
-                    z = Math.max(z, -rMax * 2); 
-                } else {
-                    z = relFunctions[currentState](r, rs);
-                }
-                return { 
-                    x: cx + x * scale, 
-                    y: cy + (y * Math.cos(tiltRad) + z * Math.sin(tiltRad)) * scale 
-                };
-            }
+    function animate(timestamp) {
+        animId = null;
+        if (!motionToggle.checked) { lastFrameTime = null; return; }
+        if (lastFrameTime !== null) {
+            const elapsed = Math.max(0, (timestamp-lastFrameTime)/1000);
+            // 1x = 50M of Schwarzschild coordinate time per real second.
+            const duration = particlePath.length-1;
+            particleProgress = (particleProgress + elapsed*(parseFloat(speedSlider.value)/10)*50/trajectory.step) % duration;
         }
-
-        if (!particleDead && particlePath.length > 0) {
-            let currentIdx = Math.min(Math.floor(particleProgress), particlePath.length - 1);
-            let currentR = particlePath[currentIdx].r;
-            
-            let lapseSquared = Math.max(0, 1 - (rs / currentR));
-            let coordinateAngularSpeed = (baseSpeed * 100) * lapseSquared / (currentR * currentR);
-            
-            particleProgress += coordinateAngularSpeed;
-            
-            let idx = Math.floor(particleProgress);
-            let nextIdx = idx + 1;
-            
-            if (currentR <= rs * 1.002 && lapseSquared < 0.002) {
-                particleDead = true; 
-            } else if (nextIdx >= particlePath.length) {
-                let lastR = particlePath[particlePath.length-1].r;
-                if (lastR <= rs * 1.05 || lastR > 100 * massM) particleDead = true; 
-                else particleProgress = 0; 
-            } else {
-                const pt1 = particlePath[idx];
-                const pt2 = particlePath[nextIdx];
-                const t = particleProgress - idx;
-                
-                const r = pt1.r + (pt2.r - pt1.r) * t;
-                
-                if (r <= rMax) {
-                    const phi = pt1.phi + (pt2.phi - pt1.phi) * t;
-                    const proj = project(r, phi);
-                    
-                    let z_factor = 0;
-                    if (r > rs * 1.001) {
-                        z_factor = (1 / Math.sqrt(1 - (rs/r))) - 1;
-                    } else {
-                        z_factor = 100; 
-                    }
-
-                    let shiftRatio = Math.min(z_factor / 5, 1.0); 
-
-                    let cr = Math.floor(125 + (255 - 125) * shiftRatio);
-                    let cg = Math.floor(211 * (1 - shiftRatio));
-                    let cb = Math.floor(252 * (1 - shiftRatio));
-                    
-                    let alpha = Math.max(0, 1.0 - (z_factor / 10));
-
-                    ctx.beginPath();
-                    ctx.arc(proj.x, proj.y, pSize * 2, 0, 2*Math.PI);
-                    ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${0.4 * alpha})`;
-                    ctx.fill();
-
-                    ctx.beginPath();
-                    ctx.arc(proj.x, proj.y, pSize, 0, 2*Math.PI);
-                    ctx.fillStyle = `rgba(${Math.min(255, cr+50)}, ${cg}, ${cb}, ${alpha})`;
-                    ctx.fill();
-                    ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                }
-            }
-        }
-
-        if (motionToggle.checked) {
-            animId = requestAnimationFrame(animate);
-            if (particleDead) initParticle(); 
-        }
+        lastFrameTime = timestamp;
+        drawScene();
+        animId = requestAnimationFrame(animate);
     }
 
     function renderGeodesics(context) {
         const width = bgCanvas.width;
         const height = bgCanvas.height;
         const M = massM;
-        const rs = 2 * M; 
+        const rs = 2 * M;
         const rMax = parseFloat(scaleSlider.value);
-        const pxPerUnit = (width * 0.45) / rMax;
+        const pxPerUnit = (projectPoint(1, 0).x - projectPoint(0, 0).x);
         const cx = width / 2;
         const cy = height / 2;
-        
-        context.fillStyle = '#0b111a';
+
+        context.fillStyle = '#161819';
         context.fillRect(0, 0, width, height);
 
         context.beginPath();
@@ -461,7 +338,7 @@
         context.fillStyle = 'rgba(255, 150, 50, 0.03)';
         context.fill();
         context.setLineDash([4, 4]);
-        context.strokeStyle = 'rgba(255, 150, 50, 0.4)';
+        context.strokeStyle = 'rgba(174, 156, 119, 0.4)';
         context.lineWidth = 1;
         context.stroke();
         context.setLineDash([]);
@@ -474,14 +351,13 @@
         context.stroke();
 
         if (pathToggle.checked && particlePath && particlePath.length > 0) {
-            context.strokeStyle = 'rgba(125, 211, 252, 0.25)';
+            context.strokeStyle = 'rgba(151, 183, 197, 0.24)';
             context.lineWidth = 1.5;
             context.beginPath();
             let started = false;
             for(let i=0; i<particlePath.length; i+=5) {
                 const pt = particlePath[i];
-                const x = cx + pt.r * Math.cos(pt.phi) * pxPerUnit;
-                const y = cy - pt.r * Math.sin(pt.phi) * pxPerUnit;
+                const {x, y} = projectPoint(pt.r*Math.cos(pt.phi), pt.r*Math.sin(pt.phi));
                 if(!started) { context.moveTo(x,y); started = true; }
                 else context.lineTo(x,y);
             }
@@ -492,7 +368,7 @@
         context.arc(cx, cy, rs * pxPerUnit, 0, 2 * Math.PI);
         context.fillStyle = '#000000';
         context.fill();
-        context.strokeStyle = 'rgba(255, 50, 50, 0.9)';
+        context.strokeStyle = 'rgba(190, 142, 132, 0.85)';
         context.lineWidth = 2;
         context.stroke();
     }
@@ -500,24 +376,14 @@
     function renderWireframe(context) {
         const width = bgCanvas.width;
         const height = bgCanvas.height;
-        const rs = 2 * massM; 
+        const rs = 2 * massM;
         const rMax = parseFloat(scaleSlider.value);
-        const tiltRad = parseFloat(angleSlider.value) * (Math.PI / 180);
         const func = relFunctions[currentState];
-        
-        context.fillStyle = '#0b111a';
+
+        context.fillStyle = '#161819';
         context.fillRect(0, 0, width, height);
 
-        const scale = (width * 0.4) / rMax; 
-        const cx = width / 2;
-        const cy = height / 2.5;
-
-        function project(x, y, z) {
-            return { 
-                x: cx + x * scale, 
-                y: cy + (y * Math.cos(tiltRad) + z * Math.sin(tiltRad)) * scale 
-            };
-        }
+        const project = projectPoint;
 
         const rings = 25;
         const spokes = 36;
@@ -525,7 +391,7 @@
 
         for (let i = rings; i >= 0; i--) {
             const t = i / rings;
-            const r = rs + (rMax - rs) * (t * t); 
+            const r = rs + Math.max(0, rMax - rs) * (0.000001 + 0.999999*t*t);
             if (r < rs) continue;
             const z = func(r, rs);
             if (z === null) continue;
@@ -539,10 +405,10 @@
         }
 
         function getColor(z) {
-            let ratio = Math.abs(z / rMax); 
+            let ratio = Math.abs(z / rMax);
             if(ratio > 1) ratio = 1;
-            let intensity = Math.floor(255 * (1 - ratio * 0.6));
-            return `rgba(${intensity}, ${intensity}, ${intensity}, 0.8)`;
+            let intensity = Math.floor(200 * (1 - ratio * 0.6));
+            return `rgba(${intensity}, ${intensity}, ${intensity}, 0.55)`;
         }
 
         context.lineWidth = 1;
@@ -553,10 +419,10 @@
             let started = false;
             for (let i = 0; i < mesh.length; i++) {
                 const proj = project(mesh[i][j].x, mesh[i][j].y, mesh[i][j].z);
-                if (!started) { context.moveTo(proj.x, proj.y); started = true; } 
+                if (!started) { context.moveTo(proj.x, proj.y); started = true; }
                 else { context.lineTo(proj.x, proj.y); }
             }
-            context.strokeStyle = 'rgba(255, 255, 255, 0.15)'; 
+            context.strokeStyle = 'rgba(255, 255, 255, 0.15)';
             context.stroke();
         }
 
@@ -564,9 +430,9 @@
             const ring = mesh[i];
             context.beginPath();
             context.strokeStyle = getColor(ring[0].z);
-            
+
             if (ring[0].r < rs * 2) {
-                context.shadowBlur = 8;
+                context.shadowBlur = 0;
                 context.shadowColor = context.strokeStyle;
             } else context.shadowBlur = 0;
 
@@ -580,16 +446,16 @@
         context.shadowBlur = 0;
 
         if (pathToggle.checked && particlePath && particlePath.length > 0) {
-            context.strokeStyle = 'rgba(125, 211, 252, 0.8)';
+            context.strokeStyle = 'rgba(151, 183, 197, 0.55)';
             context.lineWidth = 2;
             context.beginPath();
             let started = false;
             for(let i=0; i<particlePath.length; i+=5) {
                 const pt = particlePath[i];
                 let z;
-                if(pt.r <= rs) z = -20 * (rs / Math.max(pt.r, 0.01));
-                else z = func(pt.r, rs);
-                
+                z = func(pt.r, rs);
+                if (z === null) continue;
+
                 const proj = project(pt.r * Math.cos(pt.phi), pt.r * Math.sin(pt.phi), z);
                 if(!started) { context.moveTo(proj.x, proj.y); started = true; }
                 else context.lineTo(proj.x, proj.y);
@@ -598,7 +464,7 @@
         }
 
         if (mesh.length > 0) {
-            const inner = mesh[mesh.length - 1]; 
+            const inner = mesh[mesh.length - 1];
             context.beginPath();
             for (let j = 0; j < inner.length; j++) {
                 const proj = project(inner[j].x, inner[j].y, inner[j].z);
@@ -607,7 +473,7 @@
             }
             context.fillStyle = '#000000';
             context.fill();
-            context.strokeStyle = 'rgba(255, 50, 50, 0.8)'; 
+            context.strokeStyle = 'rgba(190, 142, 132, 0.8)';
             context.lineWidth = 2;
             context.stroke();
         }
@@ -615,13 +481,14 @@
 
     window.setState = function(state, element) {
         currentState = state;
-        let formattedState = state.charAt(0).toUpperCase() + state.slice(1);
-        if(state === 'geodesics') formattedState = "Geodesics";
-        stateLabel.innerText = ` Mode (${formattedState}) | M=${massM}`;
-        
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        stateLabel.innerText = `M = ${massM} · rₛ = ${2*massM}`;
+
+        document.querySelectorAll('.nav-item').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-pressed', 'false'); });
         element.classList.add('active');
-        
+        element.setAttribute('aria-pressed', 'true');
+        document.getElementById('panelTitle').textContent = equations[state].title;
+        document.getElementById('photonLegend').hidden = state !== 'geodesics';
+
         const eqData = equations[state];
         eqBox.innerHTML = `<h3>${eqData.title}</h3><p>${eqData.desc}</p><div class="math-text">${eqData.eq}</div>`;
 
@@ -642,30 +509,32 @@
     });
 
     pathToggle.addEventListener('change', () => { triggerRender(); });
-    motionToggle.addEventListener('change', () => { triggerRender(); });
+    motionToggle.addEventListener('change', () => { lastFrameTime = null; triggerRender(); });
+    pMassSlider.addEventListener('input', drawScene);
+    document.getElementById('restartButton').addEventListener('click', () => { particleProgress = 0; lastFrameTime = null; triggerRender(); });
+    document.addEventListener('visibilitychange', () => { lastFrameTime = null; });
 
     momSlider.addEventListener('input', (e) => {
         document.getElementById('momVal').innerText = parseFloat(e.target.value).toFixed(3);
-        if (pathToggle.checked || motionToggle.checked) {
-            initParticle(); 
-            triggerRender(); 
-        }
-    });
-    
-    speedSlider.addEventListener('input', (e) => {
-        document.getElementById('speedVal').innerText = (e.target.value / 10).toFixed(1) + 'x';
+        triggerRender();
     });
 
+    speedSlider.addEventListener('input', (e) => {
+        document.getElementById('speedVal').innerText = (e.target.value / 10).toFixed(1) + '×';
+    });
+
+    let toastTimer;
     function showToast(msg) {
         const toast = document.getElementById("toast");
-        toast.innerHTML = msg;
+        toast.textContent = msg;
+        clearTimeout(toastTimer);
         toast.className = "show";
-        setTimeout(() => toast.className = toast.className.replace("show", ""), 3000);
+        toastTimer = setTimeout(() => toast.className = "", 3000);
     }
 
     function exportData() {
         showToast("Generating export data...");
-        
+
         const rs = 2 * massM;
         const rMax = parseFloat(scaleSlider.value);
         let content = `ECHO GENERAL RELATIVITY EXPORT\n`;
@@ -675,56 +544,44 @@
         if (currentState === 'geodesics') {
             content += `Data: Massive Particle Geodesic Trajectory\n`;
             content += `Specific Angular Momentum (L): ${momSlider.value}\n`;
-            content += `Columns: Step, r, phi(rad), x, y\n\n`;
-            
-            let L = parseFloat(momSlider.value); 
-            let M = massM;
-            let r_stable = (L >= Math.sqrt(12) * M) ? (L*L + L * Math.sqrt(L*L - 12*M*M)) / (2*M) : 15*M;
-            let r_start = (L >= Math.sqrt(12) * M) ? r_stable * 1.1 : 15*M;
-            
-            let u = 1 / r_start;
-            let v_u = 0; 
-            let phi = 0;
-            let dPhi = 0.005; 
-            
-            let exportPath = [];
-            for(let step = 0; step < 20000; step++) {
-                v_u += (M/(L*L) + 3*M*u*u - u) * dPhi;
-                u += v_u * dPhi;
-                phi += dPhi;
-                if (u <= 0) break; 
-                let currentR = 1/u;
-                if (currentR > rMax * 5) break; 
-                exportPath.push({r: currentR, phi: phi});
-                if (currentR < rs * 1.002) break; 
-            }
-            
+
+            initParticle();
+            content += `Specific Energy (E): ${trajectory.energy}\n`;
+            content += `Termination: ${trajectory.termination}; one sampled pass\n`;
+            content += `Coordinate time step (dt/M): ${trajectory.step}\n`;
+            content += `Columns below: Step, r, phi(rad), x, y, t, tau, dr/dtau\n\n`;
+            const exportPath = particlePath;
+
             for(let i=0; i<exportPath.length; i++) {
                 let pt = exportPath[i];
                 let x = pt.r * Math.cos(pt.phi);
                 let y = pt.r * Math.sin(pt.phi);
-                content += `${i}\t${pt.r.toFixed(5)}\t${pt.phi.toFixed(5)}\t${x.toFixed(5)}\t${y.toFixed(5)}\n`;
+                content += `${i}\t${pt.r.toPrecision(15)}\t${pt.phi.toPrecision(15)}\t${x.toPrecision(15)}\t${y.toPrecision(15)}\t${pt.t.toPrecision(15)}\t${pt.tau.toPrecision(15)}\t${pt.radialVelocity.toPrecision(15)}\n`;
             }
-            
+
         } else {
-            content += `Data: 50x50 Spatial Matrix (Z-Depth)\n`;
+            content += `Data: 50x50 Spatial Matrix (${currentState === 'potential' ? 'Veff' : 'alpha'}; dimensionless physical values)\n`;
             content += `Tilt Angle: ${angleSlider.value} deg\n\n`;
-            
+
             const res = 50;
-            const func = relFunctions[currentState];
-            
+            const func = currentState === 'potential'
+                ? r => physics.potential(r, massM, parseFloat(momSlider.value))
+                : r => physics.lapse(r, massM);
+            content += `Grid: x_j = (j-25)*r_max/25; y_i = -(i-25)*r_max/25; i,j=0..49\n`;
+            content += `Specific Angular Momentum (L): ${momSlider.value}\n\n`;
+
             for (let py = 0; py < res; py++) {
                 let row = [];
                 for (let px = 0; px < res; px++) {
                     const x = (px - res/2) / (res/2 / rMax);
                     const y = -(py - res/2) / (res/2 / rMax);
                     const r = Math.sqrt(x*x + y*y);
-                    
+
                     if (r <= rs) {
-                        row.push("NaN"); 
+                        row.push("NaN");
                     } else {
                         let z = func(r, rs);
-                        row.push(z !== null ? z.toFixed(5) : "NaN");
+                        row.push(z !== null ? z.toPrecision(15) : "NaN");
                     }
                 }
                 content += row.join("\t") + "\n";
@@ -736,39 +593,55 @@
         a.href = URL.createObjectURL(blob);
         a.download = `echo_M${massM}_${currentState}.txt`;
         a.click();
-        
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+
         showToast("Export complete.");
     }
 
     function openConfigModal() {
         mInput.value = massM;
         configModal.classList.add('show');
-        setTimeout(() => mInput.focus(), 100);
+        mInput.focus();
     }
 
-    function closeConfigModal() { configModal.classList.remove('show'); }
+    function closeConfigModal() {
+        configModal.classList.remove('show');
+        document.getElementById('massButton').focus();
+    }
 
     function applyConfig() {
         const val = parseFloat(mInput.value);
-        if (!isNaN(val) && val > 0) {
+        if (Number.isFinite(val) && val >= 0.1 && val <= 1000) {
             massM = val;
-            let formattedState = currentState.charAt(0).toUpperCase() + currentState.slice(1);
-            if(currentState === 'geodesics') formattedState = "Geodesics";
-            stateLabel.innerText = ` Mode (${formattedState}) | M=${massM}`;
+            const neededRadius = Math.ceil(1.2*Math.max(2*val, physics.initialRadius(val, parseFloat(momSlider.value))));
+            scaleSlider.max = Math.max(40, neededRadius);
+            if (parseFloat(scaleSlider.value) < neededRadius) scaleSlider.value = neededRadius;
+            document.getElementById('scaleVal').innerText = scaleSlider.value;
+            stateLabel.innerText = `M = ${massM} · rₛ = ${2*massM}`;
             triggerRender();
             closeConfigModal();
             showToast(`Mass updated to M=${massM}`);
-        } else showToast("Error: Mass must be positive.");
+        } else showToast("Error: Mass must be between 0.1 and 1000.");
     }
 
     configModal.addEventListener('click', (e) => { if (e.target === configModal) closeConfigModal(); });
+    configModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeConfigModal();
+        if (e.key === 'Tab') {
+            const controls = [...configModal.querySelectorAll('input, button')];
+            if (e.shiftKey && document.activeElement === controls[0]) {
+                e.preventDefault(); controls.at(-1).focus();
+            } else if (!e.shiftKey && document.activeElement === controls.at(-1)) {
+                e.preventDefault(); controls[0].focus();
+            }
+        }
+    });
     mInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') applyConfig(); });
 
-    // Initialize
     const initData = equations[currentState];
     eqBox.innerHTML = `<h3>${initData.title}</h3><p>${initData.desc}</p><div class="math-text">${initData.eq}</div>`;
     angleControl.classList.add('disabled');
-    
+
     motionToggle.checked = false;
     triggerRender();
 </script>
